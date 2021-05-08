@@ -46,11 +46,11 @@ data = dict(
 train_cfg = dict(
     lr=1e-3,
     schedule=(200, 400,),
-    epoch=590,
+    epoch=600,
     optimizer='SGD'
 )
 test_cfg = dict(
-    min_score=0.85,
+    min_score=0.0,
     min_area=16,
     kernel_num=7,
     bbox_type='rect',

@@ -33,7 +33,6 @@ class PSENet(nn.Layer):
 
         f = paddle.concat((f1, f2, f3, f4), 1)
         det_out = self.det_head(f)
-
         if self.training:
             det_out = self._upsample(det_out, imgs.shape)
             det_loss = self.det_head.loss(det_out, gt_texts.cast('int32'), gt_kernels.cast('int32'),
@@ -42,8 +41,7 @@ class PSENet(nn.Layer):
         else:
             det_out = self._upsample(det_out, imgs.shape, 1)
             det_res = self.det_head.get_results(det_out, img_metas, cfg)
-            print(det_res.items())
             outputs.update(det_res)
-            sys.exit()
-            
         return outputs
+        
+        # return det_out

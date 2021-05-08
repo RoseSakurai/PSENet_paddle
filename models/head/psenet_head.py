@@ -13,7 +13,7 @@ import logging
 
 logging.basicConfig(level=logging.CRITICAL, filename='/home/data6/yjw/PSENet_paddle/out.txt', filemode='w')
 
-print('here')
+# print('here')
 class PSENet_Head(nn.Layer):
     def __init__(self,
                  in_channels,
@@ -43,14 +43,14 @@ class PSENet_Head(nn.Layer):
         texts = out[:, 0, :, :]
         kernels = out[:, 1:, :, :]
         # text loss
-        logging.info('text', texts)
-        logging.info('kernels', kernels)
+        # logging.info('text', texts)
+        # logging.info('kernels', kernels)
         selected_masks = ohem_batch(texts, gt_texts, training_masks)
-        logging.info('selected_masks', selected_masks)
+        # logging.info('selected_masks', selected_masks)
         loss_text = self.text_loss(texts, gt_texts, selected_masks, reduce=False)
-        logging.info('loss_text', loss_text)
+        # logging.info('loss_text', loss_text)
         iou_text = iou((texts > 0).cast('int32'), gt_texts, training_masks, reduce=False)
-        logging.info('iou_text', iou_text)
+        # logging.info('iou_text', iou_text)
         losses = dict(
             loss_text=loss_text,
             iou_text=iou_text
@@ -65,10 +65,10 @@ class PSENet_Head(nn.Layer):
             loss_kernel_i = self.kernel_loss(kernel_i, gt_kernel_i, selected_masks, reduce=False)
             loss_kernels.append(loss_kernel_i)
         loss_kernels = paddle.mean(paddle.stack(loss_kernels, axis=1), axis=1)
-        logging.info('loss_kernels', loss_kernels)
+        # logging.info('loss_kernels', loss_kernels)
         iou_kernel = iou(
             (kernels[:, -1, :, :] > 0).cast('int32'), gt_kernels[:, -1, :, :], selected_masks, reduce=False)
-        logging.info('iou_kernel', iou_kernel)
+        # logging.info('iou_kernel', iou_kernel)
         losses.update(dict(
             loss_kernels=loss_kernels,
             iou_kernel=iou_kernel
@@ -94,41 +94,41 @@ class PSENet_Head(nn.Layer):
         # print(np.sum(kernels[0,5,:,:]))
         # print(np.sum(kernels[0,6,:,:]))
 
-        def to_rgb(img):
-            img = img.reshape(img.shape[0], img.shape[1], 1)
-            img = np.concatenate((img, img, img), axis=2) * 255
-            return img
-
-        def save(img_path, imgs):
-            if not os.path.exists('vis/'):
-                os.makedirs('vis/')
-
-            for i in range(len(imgs)):
-                imgs[i] = cv2.copyMakeBorder(imgs[i], 3, 3, 3, 3, cv2.BORDER_CONSTANT, value=[255, 0, 0])
-            res = np.concatenate(imgs, axis=1)
-            if type(img_path) != str:
-                img_name = img_path[0].split('/')[-1]
-            else:
-                img_name = img_path.split('/')[-1]
-            print('saved %s.' % img_name)
-            cv2.imwrite('vis/' + img_name, res)
-
-        kernel_1 = to_rgb(kernels[0, 1])
-        kernel_2 = to_rgb(kernels[0, 2])
-        kernel_3 = to_rgb(kernels[0, 3])
-        kernel_4 = to_rgb(kernels[0, 4])
-        kernel_5 = to_rgb(kernels[0, 5])
-        kernel_6 = to_rgb(kernels[0, 6])
-
-        save('kernel.png', [kernel_1, kernel_2, kernel_3, kernel_4, kernel_5, kernel_6])
-
-        sys.exit()
+        # def to_rgb(img):
+        #     img = img.reshape(img.shape[0], img.shape[1], 1)
+        #     img = np.concatenate((img, img, img), axis=2) * 255
+        #     return img
+        #
+        # def save(img_path, imgs):
+        #     if not os.path.exists('vis/'):
+        #         os.makedirs('vis/')
+        #
+        #     for i in range(len(imgs)):
+        #         imgs[i] = cv2.copyMakeBorder(imgs[i], 3, 3, 3, 3, cv2.BORDER_CONSTANT, value=[255, 0, 0])
+        #     res = np.concatenate(imgs, axis=1)
+        #     if type(img_path) != str:
+        #         img_name = img_path[0].split('/')[-1]
+        #     else:
+        #         img_name = img_path.split('/')[-1]
+        #     print('saved %s.' % img_name)
+        #     cv2.imwrite('vis/' + img_name, res)
+        #
+        # kernel_1 = to_rgb(kernels[0, 1])
+        # kernel_2 = to_rgb(kernels[0, 2])
+        # kernel_3 = to_rgb(kernels[0, 3])
+        # kernel_4 = to_rgb(kernels[0, 4])
+        # kernel_5 = to_rgb(kernels[0, 5])
+        # kernel_6 = to_rgb(kernels[0, 6])
+        #
+        # save('kernel.png', [kernel_1, kernel_2, kernel_3, kernel_4, kernel_5, kernel_6])
+        #
+        # sys.exit()
 
         text_mask = kernels[:, :1, :, :]
-        print(np.sum(text_mask))
-        sys.exit()
+        # print(np.sum(text_mask))
+        # sys.exit()
         kernels[:, 1:, :, :] = kernels[:, 1:, :, :] * text_mask
-        print(np.sum(kernels))
+        # print(np.sum(kernels))
 
         label = pse(kernels[0], cfg.test_cfg.min_area)
 
@@ -150,7 +150,7 @@ class PSENet_Head(nn.Layer):
         scores = []
         print('label_num: {}'.format(label_num))
         for i in range(1, label_num):
-            print(i)
+            # print(i)
             ind = label == i
             points = np.array(np.where(ind)).transpose((1, 0))
 

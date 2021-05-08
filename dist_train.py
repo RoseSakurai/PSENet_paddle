@@ -12,7 +12,8 @@ import paddle
 import paddle.distributed as dist
 import argparse
 import torch
-
+import warnings
+warnings.filterwarnings('ignore')
 
 def train(train_loader, model, optimizer, epoch, start_iter, cfg, args):
     model.train()
@@ -36,7 +37,6 @@ def train(train_loader, model, optimizer, epoch, start_iter, cfg, args):
         # skip previous iterations
         if iter < start_iter:
             print('Skipping iter: %d' % iter)
-            sys.stdout.flush()
             continue
         
         # time cost of data loader
@@ -98,7 +98,6 @@ def train(train_loader, model, optimizer, epoch, start_iter, cfg, args):
                 iou_kernel=ious_kernel.avg,
             )
             print(output_log)
-            
         if (iter+1) == len(train_loader)//args.nprocs: break
 
 
@@ -184,8 +183,7 @@ def main(args):
                 key = key.replace('var', 'variance')
             new_sd[key[7:]] = paddle.to_tensor(value.cpu().numpy())
         model.set_state_dict(new_sd)
-        # checkpoint = paddle.load(cfg.train_cfg.pretrain)
-        # model.set_state_dict(checkpoint['state_dict'])
+    
     if args.resume:
         assert osp.isdir(args.resume), 'Error: no checkpoint directory found!'
         if dist.get_rank() == 0:
@@ -195,25 +193,27 @@ def main(args):
 
         start_epoch = checkpoint['epoch']
         start_iter = checkpoint['iter']
-        model.set_state_dict(paddle.load(osp.join(args.resume, 'checkpoint.pdparams'))[0])
+        model.set_state_dict(paddle.load(osp.join(args.resume, 'checkpoint.pdparams')))
         optimizer.set_state_dict(paddle.load(osp.join(args.resume, 'checkpoint.pdopt')))
-
+    
     for epoch in range(start_epoch, cfg.train_cfg.epoch):
         if dist.get_rank() == 0:
             print('\nEpoch: [%d | %d]' % (epoch + 1, cfg.train_cfg.epoch))
-
+        
+        # for k, v in model.state_dict().items():
+        #     if "backbone.bn1" in k and dist.get_rank() == 0:
+        #         print(k, v)
+        
         train(train_loader, model, optimizer, epoch, start_iter, cfg, args)
-
+        
         if dist.get_rank() == 0:
             state = OrderedDict(
                 epoch=epoch + 1,
                 iter=0
             )
-            model_state_dict = model.state_dict(),
-            opt_state_dict = optimizer.state_dict()
             save_checkpoint(state, checkpoint_path, cfg)
-            paddle.save(model_state_dict, osp.join(checkpoint_path, 'checkpoint.pdparams'))
-            paddle.save(opt_state_dict, osp.join(checkpoint_path, 'checkpoint.pdopt'))
+            paddle.save(model.state_dict(), osp.join(checkpoint_path, 'checkpoint.pdparams'))
+            paddle.save(optimizer.state_dict(), osp.join(checkpoint_path, 'checkpoint.pdopt'))
 
 
 if __name__ == '__main__':

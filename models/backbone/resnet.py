@@ -246,6 +246,7 @@ class ResNet(nn.Layer):
 def resnet50(pretrained=False, **kwargs):
     model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
     if pretrained:
+        print("Loading pretrained model from /home/data6/yjw/PSENet_paddle/pretrained/ResNet50_pretrained.pdparams")
         pretrain_state_dict = paddle.load('/home/data6/yjw/PSENet_paddle/pretrained/ResNet50_pretrained.pdparams')
         new_sd = dict()
         for idex, value in enumerate(pretrain_state_dict.values()):

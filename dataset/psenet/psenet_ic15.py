@@ -14,8 +14,8 @@ import sys
 
 USE_GPU = True
 
-# ic15_root_dir = './data/ICDAR2015/Challenge4/'
-ic15_root_dir = './data/ICDAR2015/demo/'
+ic15_root_dir = './data/ICDAR2015/Challenge4/'
+# ic15_root_dir = './data/ICDAR2015/demo/'
 ic15_train_data_dir = ic15_root_dir + 'ch4_training_images/'
 ic15_train_gt_dir = ic15_root_dir + 'ch4_training_localization_transcription_gt/'
 
@@ -288,10 +288,10 @@ class PSENET_IC15(Dataset):
         gt_kernels = np.array(gt_kernels).astype(np.uint8)
 
         img = Image.fromarray(img)
-
+        
         if self.is_transform:
             img = transforms.ColorJitter(brightness=32.0 / 255, saturation=0.5)(img)
-        img = np.transpose(img, [2, 0, 1])
+        img = (np.transpose(img, [2, 0, 1]) / 255.0).astype(np.float32)
         img = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])(img)
 
         return img, gt_text, gt_kernels, training_mask

@@ -1,5 +1,5 @@
 import paddle
-
+import numpy as np
 
 def ohem_single(score, gt_text, training_mask):
     pos = paddle.cast(gt_text > 0.5, dtype='int32')
