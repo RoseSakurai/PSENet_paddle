@@ -50,7 +50,7 @@ train_cfg = dict(
     optimizer='SGD'
 )
 test_cfg = dict(
-    min_score=0.0,
+    min_score=0.85,
     min_area=16,
     kernel_num=7,
     bbox_type='rect',
