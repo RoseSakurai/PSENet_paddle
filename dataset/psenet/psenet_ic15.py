@@ -285,16 +285,14 @@ class PSENET_IC15(Dataset):
 
         gt_text = gt_instance.copy()
         gt_text[gt_text > 0] = 1
-        gt_kernels = np.array(gt_kernels).astype(np.uint8)
+        gt_kernels = np.array(gt_kernels)
 
         img = Image.fromarray(img)
-        
         if self.is_transform:
             img = transforms.ColorJitter(brightness=32.0 / 255, saturation=0.5)(img)
         img = (np.transpose(img, [2, 0, 1]) / 255.0).astype(np.float32)
         img = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])(img)
-
-        return img, gt_text, gt_kernels, training_mask
+        return img, gt_text.astype(np.int32), gt_kernels.astype(np.int32), training_mask.astype(np.int32)
 
     def prepare_test_data(self, index):
         img_path = self.img_paths[index]

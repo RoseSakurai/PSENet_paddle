@@ -51,6 +51,17 @@ def train(train_loader, model, optimizer, epoch, start_iter, cfg, args):
             gt_kernels=data_[2],
             training_masks=data_[3],
         )
+        # from PIL import Image
+        # import numpy as np
+        # if dist.get_rank() == 0:
+        #     imgs = Image.fromarray((data_[0]*255.0).numpy().astype(np.uint8))
+        #     imgs.save("imgs.png")
+        #     gt_text = Image.fromarray((data_[1]).numpy().astype(np.uint8))
+        #     gt_text.save("gt_text.png")
+        #     training_mask = Image.fromarray((data_[3]).numpy().astype(np.uint8))
+        #     training_mask.save("training_mask.png")
+        # exit()
+        
         data.update(dict(cfg=cfg))
         outputs = model(**data)
         
