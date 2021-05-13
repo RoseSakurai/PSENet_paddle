@@ -11,7 +11,6 @@ from utils import AverageMeter
 import paddle
 import paddle.distributed as dist
 import argparse
-import torch
 import warnings
 
 
@@ -186,16 +185,7 @@ def main(args):
     if hasattr(cfg.train_cfg, 'pretrain'):
         assert osp.isfile(cfg.train_cfg.pretrain), 'Error: no pretrained weights found!'
         print('Finetuning from pretrained model %s.' % cfg.train_cfg.pretrain)
-        sd = torch.load(cfg.train_cfg.pretrain)['state_dict']
-        new_sd = dict()
-        for key, value in sd.items():
-            if 'num_batches_tracked' in key:
-                continue
-            if 'running' in key:
-                key = key.replace('running', '')
-            if 'var' in key:
-                key = key.replace('var', 'variance')
-            new_sd[key[7:]] = paddle.to_tensor(value.cpu().numpy())
+        new_sd = paddle.load(cfg.train_cfg.pretrain)
         model.set_state_dict(new_sd)
 
     if args.resume:

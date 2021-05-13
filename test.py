@@ -7,7 +7,6 @@ import sys
 import time
 import json
 from mmcv import Config
-import torch
 
 from dataset import build_data_loader
 from models import build_model
