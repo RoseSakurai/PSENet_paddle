@@ -26,6 +26,15 @@ class FPN(nn.Layer):
 
         self.latlayer3_ = Conv_BN_ReLU(256, 256, kernel_size=1, stride=1, padding=0)
 
+        for m in self.sublayers():
+            if isinstance(m, nn.Conv2D):
+                n = m.weight.shape[0] * m.weight.shape[1] * m.weight.shape[2]
+                v = np.random.normal(loc=0., scale=np.sqrt(2. / n), size=m.weight.shape).astype('float32')
+                m.weight.set_value(v)
+            elif isinstance(m, nn.BatchNorm):
+                m.weight.set_value(np.ones(m.weight.shape).astype('float32'))
+                m.bias.set_value(np.zeros(m.bias.shape).astype('float32'))
+
     def _upsample(self, x, y, scale=1):
         # _, _, H, W = y.size()
         h = np.size(y, 2)

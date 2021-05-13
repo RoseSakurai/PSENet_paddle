@@ -3,78 +3,14 @@ import sys
 import paddle
 import paddle.nn as nn
 import math
+import numpy as np
+
+try:
+    from urllib import urlretrieve
+except ImportError:
+    from urllib.request import urlretrieve
 
 __all__ = ['resnet50']
-
-model_sd = ['conv1.weight', 'bn1.weight', 'bn1.bias', 'bn1._mean', 'bn1._variance', 'layer1.0.conv1.weight',
-            'layer1.0.bn1.weight', 'layer1.0.bn1.bias',
-            'layer1.0.bn1._mean', 'layer1.0.bn1._variance', 'layer1.0.conv2.weight', 'layer1.0.bn2.weight',
-            'layer1.0.bn2.bias', 'layer1.0.bn2._mean', 'layer1.0.bn2._variance', 'layer1.0.conv3.weight',
-            'layer1.0.bn3.weight', 'layer1.0.bn3.bias', 'layer1.0.bn3._mean', 'layer1.0.bn3._variance',
-            'layer1.0.downsample.0.weight', 'layer1.0.downsample.1.weight', 'layer1.0.downsample.1.bias',
-            'layer1.0.downsample.1._mean', 'layer1.0.downsample.1._variance', 'layer1.1.conv1.weight',
-            'layer1.1.bn1.weight', 'layer1.1.bn1.bias', 'layer1.1.bn1._mean', 'layer1.1.bn1._variance',
-            'layer1.1.conv2.weight', 'layer1.1.bn2.weight', 'layer1.1.bn2.bias', 'layer1.1.bn2._mean',
-            'layer1.1.bn2._variance', 'layer1.1.conv3.weight', 'layer1.1.bn3.weight', 'layer1.1.bn3.bias',
-            'layer1.1.bn3._mean', 'layer1.1.bn3._variance', 'layer1.2.conv1.weight', 'layer1.2.bn1.weight',
-            'layer1.2.bn1.bias', 'layer1.2.bn1._mean', 'layer1.2.bn1._variance', 'layer1.2.conv2.weight',
-            'layer1.2.bn2.weight', 'layer1.2.bn2.bias', 'layer1.2.bn2._mean', 'layer1.2.bn2._variance',
-            'layer1.2.conv3.weight', 'layer1.2.bn3.weight', 'layer1.2.bn3.bias', 'layer1.2.bn3._mean',
-            'layer1.2.bn3._variance', 'layer2.0.conv1.weight', 'layer2.0.bn1.weight', 'layer2.0.bn1.bias',
-            'layer2.0.bn1._mean', 'layer2.0.bn1._variance', 'layer2.0.conv2.weight', 'layer2.0.bn2.weight',
-            'layer2.0.bn2.bias', 'layer2.0.bn2._mean', 'layer2.0.bn2._variance', 'layer2.0.conv3.weight',
-            'layer2.0.bn3.weight', 'layer2.0.bn3.bias', 'layer2.0.bn3._mean', 'layer2.0.bn3._variance',
-            'layer2.0.downsample.0.weight', 'layer2.0.downsample.1.weight', 'layer2.0.downsample.1.bias',
-            'layer2.0.downsample.1._mean', 'layer2.0.downsample.1._variance', 'layer2.1.conv1.weight',
-            'layer2.1.bn1.weight', 'layer2.1.bn1.bias', 'layer2.1.bn1._mean', 'layer2.1.bn1._variance',
-            'layer2.1.conv2.weight', 'layer2.1.bn2.weight', 'layer2.1.bn2.bias', 'layer2.1.bn2._mean',
-            'layer2.1.bn2._variance', 'layer2.1.conv3.weight', 'layer2.1.bn3.weight', 'layer2.1.bn3.bias',
-            'layer2.1.bn3._mean', 'layer2.1.bn3._variance', 'layer2.2.conv1.weight', 'layer2.2.bn1.weight',
-            'layer2.2.bn1.bias', 'layer2.2.bn1._mean', 'layer2.2.bn1._variance', 'layer2.2.conv2.weight',
-            'layer2.2.bn2.weight', 'layer2.2.bn2.bias', 'layer2.2.bn2._mean', 'layer2.2.bn2._variance',
-            'layer2.2.conv3.weight', 'layer2.2.bn3.weight', 'layer2.2.bn3.bias', 'layer2.2.bn3._mean',
-            'layer2.2.bn3._variance', 'layer2.3.conv1.weight', 'layer2.3.bn1.weight', 'layer2.3.bn1.bias',
-            'layer2.3.bn1._mean', 'layer2.3.bn1._variance', 'layer2.3.conv2.weight', 'layer2.3.bn2.weight',
-            'layer2.3.bn2.bias', 'layer2.3.bn2._mean', 'layer2.3.bn2._variance', 'layer2.3.conv3.weight',
-            'layer2.3.bn3.weight', 'layer2.3.bn3.bias', 'layer2.3.bn3._mean', 'layer2.3.bn3._variance',
-            'layer3.0.conv1.weight', 'layer3.0.bn1.weight', 'layer3.0.bn1.bias', 'layer3.0.bn1._mean',
-            'layer3.0.bn1._variance', 'layer3.0.conv2.weight', 'layer3.0.bn2.weight', 'layer3.0.bn2.bias',
-            'layer3.0.bn2._mean', 'layer3.0.bn2._variance', 'layer3.0.conv3.weight', 'layer3.0.bn3.weight',
-            'layer3.0.bn3.bias', 'layer3.0.bn3._mean', 'layer3.0.bn3._variance',
-            'layer3.0.downsample.0.weight', 'layer3.0.downsample.1.weight', 'layer3.0.downsample.1.bias',
-            'layer3.0.downsample.1._mean', 'layer3.0.downsample.1._variance', 'layer3.1.conv1.weight',
-            'layer3.1.bn1.weight', 'layer3.1.bn1.bias', 'layer3.1.bn1._mean', 'layer3.1.bn1._variance',
-            'layer3.1.conv2.weight', 'layer3.1.bn2.weight', 'layer3.1.bn2.bias', 'layer3.1.bn2._mean',
-            'layer3.1.bn2._variance', 'layer3.1.conv3.weight', 'layer3.1.bn3.weight', 'layer3.1.bn3.bias',
-            'layer3.1.bn3._mean', 'layer3.1.bn3._variance', 'layer3.2.conv1.weight', 'layer3.2.bn1.weight',
-            'layer3.2.bn1.bias', 'layer3.2.bn1._mean', 'layer3.2.bn1._variance', 'layer3.2.conv2.weight',
-            'layer3.2.bn2.weight', 'layer3.2.bn2.bias', 'layer3.2.bn2._mean', 'layer3.2.bn2._variance',
-            'layer3.2.conv3.weight', 'layer3.2.bn3.weight', 'layer3.2.bn3.bias', 'layer3.2.bn3._mean',
-            'layer3.2.bn3._variance', 'layer3.3.conv1.weight', 'layer3.3.bn1.weight', 'layer3.3.bn1.bias',
-            'layer3.3.bn1._mean', 'layer3.3.bn1._variance', 'layer3.3.conv2.weight', 'layer3.3.bn2.weight',
-            'layer3.3.bn2.bias', 'layer3.3.bn2._mean', 'layer3.3.bn2._variance', 'layer3.3.conv3.weight',
-            'layer3.3.bn3.weight', 'layer3.3.bn3.bias', 'layer3.3.bn3._mean', 'layer3.3.bn3._variance',
-            'layer3.4.conv1.weight', 'layer3.4.bn1.weight', 'layer3.4.bn1.bias', 'layer3.4.bn1._mean',
-            'layer3.4.bn1._variance', 'layer3.4.conv2.weight', 'layer3.4.bn2.weight', 'layer3.4.bn2.bias',
-            'layer3.4.bn2._mean', 'layer3.4.bn2._variance', 'layer3.4.conv3.weight', 'layer3.4.bn3.weight',
-            'layer3.4.bn3.bias', 'layer3.4.bn3._mean', 'layer3.4.bn3._variance', 'layer3.5.conv1.weight',
-            'layer3.5.bn1.weight', 'layer3.5.bn1.bias', 'layer3.5.bn1._mean', 'layer3.5.bn1._variance',
-            'layer3.5.conv2.weight', 'layer3.5.bn2.weight', 'layer3.5.bn2.bias', 'layer3.5.bn2._mean',
-            'layer3.5.bn2._variance', 'layer3.5.conv3.weight', 'layer3.5.bn3.weight', 'layer3.5.bn3.bias',
-            'layer3.5.bn3._mean', 'layer3.5.bn3._variance', 'layer4.0.conv1.weight', 'layer4.0.bn1.weight',
-            'layer4.0.bn1.bias', 'layer4.0.bn1._mean', 'layer4.0.bn1._variance', 'layer4.0.conv2.weight',
-            'layer4.0.bn2.weight', 'layer4.0.bn2.bias', 'layer4.0.bn2._mean', 'layer4.0.bn2._variance',
-            'layer4.0.conv3.weight', 'layer4.0.bn3.weight', 'layer4.0.bn3.bias', 'layer4.0.bn3._mean',
-            'layer4.0.bn3._variance', 'layer4.0.downsample.0.weight', 'layer4.0.downsample.1.weight',
-            'layer4.0.downsample.1.bias', 'layer4.0.downsample.1._mean', 'layer4.0.downsample.1._variance',
-            'layer4.1.conv1.weight', 'layer4.1.bn1.weight', 'layer4.1.bn1.bias', 'layer4.1.bn1._mean',
-            'layer4.1.bn1._variance', 'layer4.1.conv2.weight', 'layer4.1.bn2.weight', 'layer4.1.bn2.bias',
-            'layer4.1.bn2._mean', 'layer4.1.bn2._variance', 'layer4.1.conv3.weight', 'layer4.1.bn3.weight',
-            'layer4.1.bn3.bias', 'layer4.1.bn3._mean', 'layer4.1.bn3._variance', 'layer4.2.conv1.weight',
-            'layer4.2.bn1.weight', 'layer4.2.bn1.bias', 'layer4.2.bn1._mean', 'layer4.2.bn1._variance',
-            'layer4.2.conv2.weight', 'layer4.2.bn2.weight', 'layer4.2.bn2.bias', 'layer4.2.bn2._mean',
-            'layer4.2.bn2._variance', 'layer4.2.conv3.weight', 'layer4.2.bn3.weight', 'layer4.2.bn3.bias',
-            'layer4.2.bn3._mean', 'layer4.2.bn3._variance', 'fc.weight', 'fc.bias']
 
 
 def conv3x3(in_planes, out_planes, stride=1):
@@ -162,13 +98,14 @@ class Convkxk(nn.Layer):
         self.bn = nn.BatchNorm2D(out_planes)
         self.relu = nn.ReLU()
 
-        # for m in self.sublayers():
-        #     if isinstance(m, nn.Conv2D):
-        #         n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-        #         m.weight.data.normal_(0, math.sqrt(2. / n))
-        #     elif isinstance(m, nn.BatchNorm2D):
-        #         m.weight.data.fill_(1)
-        #         m.bias.data.zero_()
+        for m in self.sublayers():
+            if isinstance(m, nn.Conv2D):
+                n = m.weight.shape[0] * m.weight.shape[1] * m.weight.shape[2]
+                v = np.random.normal(loc=0., scale=np.sqrt(2. / n), size=m.weight.shape).astype('float32')
+                m.weight.set_value(v)
+            elif isinstance(m, nn.BatchNorm):
+                m.weight.set_value(np.ones(m.weight.shape).astype('float32'))
+                m.bias.set_value(np.zeros(m.bias.shape).astype('float32'))
 
     def forward(self, x):
         return self.relu(self.bn(self.conv(x)))
@@ -195,13 +132,14 @@ class ResNet(nn.Layer):
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
 
-        # for m in self.sublayers():
-        #     if isinstance(m, nn.Conv2D):
-        #         n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-        #         m.weight.data.normal_(0, math.sqrt(2. / n))
-        #     elif isinstance(m, nn.BatchNorm2D):
-        #         m.weight.data.fill_(1)
-        #         m.bias.data.zero_()
+        for m in self.sublayers():
+            if isinstance(m, nn.Conv2D):
+                n = m.weight.shape[0] * m.weight.shape[1] * m.weight.shape[2]
+                v = np.random.normal(loc=0., scale=np.sqrt(2. / n), size=m.weight.shape).astype('float32')
+                m.weight.set_value(v)
+            elif isinstance(m, nn.BatchNorm):
+                m.weight.set_value(np.ones(m.weight.shape).astype('float32'))
+                m.bias.set_value(np.zeros(m.bias.shape).astype('float32'))
 
     def _make_layer(self, block, planes, blocks, stride=1):
         downsample = None
@@ -246,12 +184,17 @@ class ResNet(nn.Layer):
 def resnet50(pretrained=False, **kwargs):
     model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
     if pretrained:
-        print("Loading pretrained model from /home/data6/yjw/PSENet_paddle/pretrained/ResNet50_pretrained.pdparams")
-        pretrain_state_dict = paddle.load('/home/data6/yjw/PSENet_paddle/pretrained/ResNet50_pretrained.pdparams')
-        new_sd = dict()
-        for idex, value in enumerate(pretrain_state_dict.values()):
-            new_sd[model_sd[idex]] = value
-        model.set_state_dict(new_sd)
+        model.set_state_dict(load_url('https://drive.google.com/file/d/1R4cb6Von9jOcHdqK7MJ1pbK23OxKC0zC/view?usp=sharing'))
     return model
 
+
+def load_url(url, model_dir='./pretrained', map_location=None):
+    if not os.path.exists(model_dir):
+        os.makedirs(model_dir)
+    filename = 'resnet50-imagenet.pdparams'
+    cached_file = os.path.join(model_dir, filename)
+    if not os.path.exists(cached_file):
+        sys.stderr.write('Downloading: "{}" to {}\n'.format(url, cached_file))
+        urlretrieve(url, cached_file)
+    return paddle.load(cached_file, map_location=map_location)
 

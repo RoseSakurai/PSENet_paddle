@@ -42,10 +42,10 @@ def ohem_batch(scores, gt_texts, training_masks):
 
     return selected_masks
 
-
-input = paddle.to_tensor([[[0.1, -0.2, 0.3], [0.4, -0.3, -0.5]]])
-target = paddle.to_tensor([[[1, 1, 0], [0, 1, 1]]])
-mask = paddle.to_tensor([[[1, 1, 1], [0, 0, 0]]])
-
-
-print(ohem_batch(input, target, mask))
+#
+# input = paddle.to_tensor([[[0.1, -0.2, 0.3], [0.4, -0.3, -0.5]]])
+# target = paddle.to_tensor([[[1, 1, 0], [0, 1, 1]]])
+# mask = paddle.to_tensor([[[1, 1, 1], [0, 0, 0]]])
+#
+#
+# print(ohem_batch(input, target, mask))

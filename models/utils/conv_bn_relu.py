@@ -1,6 +1,7 @@
 import paddle
 import paddle.nn as nn
 import math
+import numpy as np
 
 
 class Conv_BN_ReLU(nn.Layer):
@@ -11,24 +12,15 @@ class Conv_BN_ReLU(nn.Layer):
         self.bn = nn.BatchNorm2D(out_planes)
         self.relu = nn.ReLU()
 
-        # for m in self.sublayers():
-        #     if isinstance(m, nn.layer.conv.Conv2D):
-        #         # print('conv2d', dir(m))
-        #         # print('ks', m._kernel_size)
-        #         # print('oc', m._out_channels)
-        #         # print('weight', callable(m.weight.norm))
-        #
-        #         n = m._kernel_size[0] * m._kernel_size[1] * m._out_channels
-        #         m.weight.norm(0, math.sqrt(2. / n))
-        #     # elif isinstance(m, nn.layer.norm.BatchNorm2D):
-        #     # print('bn2d', dir(m))
-        #     # m.weight.data.fill_(1)
-        #     # m.bias.data.zero_()
+        for m in self.sublayers():
+            if isinstance(m, nn.Conv2D):
+                n = m.weight.shape[0] * m.weight.shape[1] * m.weight.shape[2]
+                v = np.random.normal(loc=0., scale=np.sqrt(2. / n), size=m.weight.shape).astype('float32')
+                m.weight.set_value(v)
+            elif isinstance(m, nn.BatchNorm):
+                m.weight.set_value(np.ones(m.weight.shape).astype('float32'))
+                m.bias.set_value(np.zeros(m.bias.shape).astype('float32'))
 
     def forward(self, x):
         return self.relu(self.bn(self.conv(x)))
 
-
-mylayer = Conv_BN_ReLU(3, 4)
-# for i, m in enumerate(mylayer.sublayers()):
-#     print(i, type(m))

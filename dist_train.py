@@ -13,37 +13,40 @@ import paddle.distributed as dist
 import argparse
 import torch
 import warnings
-warnings.filterwarnings('ignore')
+
+
+# warnings.filterwarnings('ignore')
+
 
 def train(train_loader, model, optimizer, epoch, start_iter, cfg, args):
     model.train()
-    
+
     # meters
     batch_time = AverageMeter()
     data_time = AverageMeter()
-    
+
     losses = AverageMeter()
     losses_text = AverageMeter()
     losses_kernels = AverageMeter()
-    
+
     ious_text = AverageMeter()
     ious_kernel = AverageMeter()
-    
+
     # start time
     start = time.time()
-    
+
     for iter, data_ in enumerate(train_loader):
-        
+
         # skip previous iterations
         if iter < start_iter:
             print('Skipping iter: %d' % iter)
             continue
-        
+
         # time cost of data loader
         data_time.update(time.time() - start)
-        
+
         adjust_learning_rate(optimizer, train_loader, epoch, iter, cfg)
-        
+
         # prepare input
         data = dict(
             imgs=data_[0],
@@ -61,43 +64,43 @@ def train(train_loader, model, optimizer, epoch, start_iter, cfg, args):
         #     training_mask = Image.fromarray((data_[3]).numpy().astype(np.uint8))
         #     training_mask.save("training_mask.png")
         # exit()
-        
+
         data.update(dict(cfg=cfg))
         outputs = model(**data)
-        
+
         # detection loss
         loss_text = paddle.mean(outputs['loss_text'])
         losses_text.update(float(loss_text))
-        
+
         loss_kernels = paddle.mean(outputs['loss_kernels'])
         losses_kernels.update(float(loss_kernels))
-        
+
         loss = loss_text + loss_kernels
-        
+
         iou_text = paddle.mean(outputs['iou_text'])
         ious_text.update(float(iou_text))
         iou_kernel = paddle.mean(outputs['iou_kernel'])
         ious_kernel.update(float(iou_kernel))
-        
+
         losses.update(float(loss))
         # backward
         optimizer.clear_grad()
         loss.backward()
         optimizer.step()
-        
+
         batch_time.update(time.time() - start)
-        
+
         # update start time
         start = time.time()
-        
+
         # print log
-        if iter % 10 == 0 and dist.get_rank() == 0:
+        if iter % 20 == 0 and dist.get_rank() == 0:
             output_log = '({batch}/{size}) LR: {lr:.6f} | Batch: {bt:.3f}s | Total: {total:.0f}min | ' \
                          'ETA: {eta:.0f}min | Loss: {loss:.3f} | ' \
                          'Loss(text/kernel): {loss_text:.3f}/{loss_kernel:.3f} ' \
                          '| IoU(text/kernel): {iou_text:.3f}/{iou_kernel:.3f} '.format(
                 batch=iter + 1,
-                size=len(train_loader)//args.nprocs,
+                size=len(train_loader) // args.nprocs,
                 lr=optimizer.get_lr(),
                 bt=batch_time.avg,
                 total=batch_time.avg * iter / 60.0,
@@ -109,7 +112,7 @@ def train(train_loader, model, optimizer, epoch, start_iter, cfg, args):
                 iou_kernel=ious_kernel.avg,
             )
             print(output_log)
-        if (iter+1) == len(train_loader)//args.nprocs: break
+        if (iter + 1) == len(train_loader) // args.nprocs: break
 
 
 def adjust_learning_rate(optimizer, dataloader, epoch, iter, cfg):
@@ -125,25 +128,24 @@ def adjust_learning_rate(optimizer, dataloader, epoch, iter, cfg):
             if epoch < schedule[i]:
                 break
             lr = lr * 0.1
-    
+
     optimizer.set_lr(lr)
 
 
-def save_checkpoint(state, checkpoint_path, cfg):
+def save_checkpoint(state, model_state_dict, optimizer_state_dict, checkpoint_path, cfg):
     file_path = osp.join(checkpoint_path, 'checkpoint.json')
     with open(file_path, 'w') as f:
         f.write(json.dumps(state))
-    # if cfg.data.train.type in ['synth'] or \
-    #         (state['iter'] == 0 and state['epoch'] > cfg.train_cfg.epoch - 100 and state['epoch'] % 10 == 0):
-    #     model_file_name = 'checkpoint_%dep.pdparams' % state['epoch']
-    #     opt_file_name = 'checkpoint_%dep.pdopt' % state['epoch']
-    #     file_path = osp.join(checkpoint_path, file_name)
-    #
-    #     paddle.save(state, file_path)
+
+    paddle.save(model_state_dict, osp.join(checkpoint_path, 'checkpoint.pdparams'))
+    paddle.save(optimizer_state_dict, osp.join(checkpoint_path, 'checkpoint.pdopt'))
+    if state['epoch'] > cfg.train_cfg.epoch - 100 and state['epoch'] % 10 == 0:
+        model_file_name = 'checkpoint_%dep.pdparams' % state['epoch']
+        file_path = osp.join(checkpoint_path, model_file_name)
+        paddle.save(model_state_dict, file_path)
 
 
 def main(args):
-    
     dist.init_parallel_env()
 
     cfg = Config.fromfile(args.config)
@@ -159,6 +161,7 @@ def main(args):
         print('Checkpoint path: %s.' % checkpoint_path)
 
     # data loader
+
     data_set = build_data_loader(cfg.data.train)
     train_loader = paddle.io.DataLoader(
         data_set,
@@ -194,7 +197,7 @@ def main(args):
                 key = key.replace('var', 'variance')
             new_sd[key[7:]] = paddle.to_tensor(value.cpu().numpy())
         model.set_state_dict(new_sd)
-    
+
     if args.resume:
         assert osp.isdir(args.resume), 'Error: no checkpoint directory found!'
         if dist.get_rank() == 0:
@@ -206,25 +209,25 @@ def main(args):
         start_iter = checkpoint['iter']
         model.set_state_dict(paddle.load(osp.join(args.resume, 'checkpoint.pdparams')))
         optimizer.set_state_dict(paddle.load(osp.join(args.resume, 'checkpoint.pdopt')))
-    
+
     for epoch in range(start_epoch, cfg.train_cfg.epoch):
         if dist.get_rank() == 0:
             print('\nEpoch: [%d | %d]' % (epoch + 1, cfg.train_cfg.epoch))
-        
+
         # for k, v in model.state_dict().items():
         #     if "backbone.bn1" in k and dist.get_rank() == 0:
         #         print(k, v)
-        
+
         train(train_loader, model, optimizer, epoch, start_iter, cfg, args)
-        
+
         if dist.get_rank() == 0:
             state = OrderedDict(
                 epoch=epoch + 1,
                 iter=0
             )
-            save_checkpoint(state, checkpoint_path, cfg)
-            paddle.save(model.state_dict(), osp.join(checkpoint_path, 'checkpoint.pdparams'))
-            paddle.save(optimizer.state_dict(), osp.join(checkpoint_path, 'checkpoint.pdopt'))
+            model_sd = model.state_dict()
+            optimizer_sd = optimizer.state_dict()
+            save_checkpoint(state, model_sd, optimizer_sd, checkpoint_path, cfg)
 
 
 if __name__ == '__main__':

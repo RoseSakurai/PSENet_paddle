@@ -9,11 +9,8 @@ from ..loss import iou, build_loss, ohem_batch
 from ..post_processing import pse
 import sys
 import os
-import logging
 
-logging.basicConfig(level=logging.CRITICAL, filename='/home/data6/yjw/PSENet_paddle/out.txt', filemode='w')
 
-# print('here')
 class PSENet_Head(nn.Layer):
     def __init__(self,
                  in_channels,
@@ -30,6 +27,15 @@ class PSENet_Head(nn.Layer):
 
         self.text_loss = build_loss(loss_text)
         self.kernel_loss = build_loss(loss_kernel)
+
+        for m in self.sublayers():
+            if isinstance(m, nn.Conv2D):
+                n = m.weight.shape[0] * m.weight.shape[1] * m.weight.shape[2]
+                v = np.random.normal(loc=0., scale=np.sqrt(2. / n), size=m.weight.shape).astype('float32')
+                m.weight.set_value(v)
+            elif isinstance(m, nn.BatchNorm):
+                m.weight.set_value(np.ones(m.weight.shape).astype('float32'))
+                m.bias.set_value(np.zeros(m.bias.shape).astype('float32'))
 
     def forward(self, f):
         out = self.conv1(f)
@@ -112,7 +118,15 @@ class PSENet_Head(nn.Layer):
         #         img_name = img_path.split('/')[-1]
         #     print('saved %s.' % img_name)
         #     cv2.imwrite('vis/' + img_name, res)
-        #
+
+
+
+        text_mask = kernels[:, :1, :, :]
+        # print(np.sum(text_mask))
+        # sys.exit()
+        kernels[:, 1:, :, :] = kernels[:, 1:, :, :] * text_mask
+        # print(np.sum(kernels))
+        # kernel_0 = to_rgb(kernels[0, 0])
         # kernel_1 = to_rgb(kernels[0, 1])
         # kernel_2 = to_rgb(kernels[0, 2])
         # kernel_3 = to_rgb(kernels[0, 3])
@@ -120,15 +134,9 @@ class PSENet_Head(nn.Layer):
         # kernel_5 = to_rgb(kernels[0, 5])
         # kernel_6 = to_rgb(kernels[0, 6])
         #
-        # save('kernel.png', [kernel_1, kernel_2, kernel_3, kernel_4, kernel_5, kernel_6])
+        # save('kernel.png', [kernel_0, kernel_1, kernel_2, kernel_3, kernel_4, kernel_5, kernel_6])
         #
         # sys.exit()
-
-        text_mask = kernels[:, :1, :, :]
-        # print(np.sum(text_mask))
-        # sys.exit()
-        kernels[:, 1:, :, :] = kernels[:, 1:, :, :] * text_mask
-        # print(np.sum(kernels))
 
         label = pse(kernels[0], cfg.test_cfg.min_area)
 
@@ -148,7 +156,7 @@ class PSENet_Head(nn.Layer):
 
         bboxes = []
         scores = []
-        print('label_num: {}'.format(label_num))
+        # print('label_num: {}'.format(label_num))
         for i in range(1, label_num):
             # print(i)
             ind = label == i
