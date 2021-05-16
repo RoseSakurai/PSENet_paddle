@@ -2,6 +2,7 @@
 - PSENet is included in [MMOCR](https://github.com/open-mmlab/mmocr).
 - We have implemented PSENet using Paddle. You can find the python version [here](https://github.com/whai362/PSENet).
 - You can find code of PAN [here](https://github.com/whai362/pan_pp.pytorch).
+- Another group did the same job. You can visit it [here](https://github.com/PaddleEdu/OCR-models-PaddlePaddle/tree/main/PSENet). You can also have a try online with all the environment ready [here](https://aistudio.baidu.com/aistudio/projectdetail/1945560) 
 
 ## Introduction
 Official Paddle implementations of PSENet [1].
